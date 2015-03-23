@@ -1,0 +1,28 @@
+{
+  "name": "fermata-couchdb",
+  "version": "0.10.5",
+  "description": "CouchDB helpers for Fermata",
+  "main": "fermata-couchdb.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/natevw/fermata-couchdb.git"
+  },
+  "keywords": [
+    "couchdb",
+    "rest",
+    "changes",
+    "fermata"
+  ],
+  "author": "Nathan Vander Wilt",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/natevw/fermata-couchdb/issues"
+  },
+  "homepage": "https://github.com/natevw/fermata-couchdb",
+  "peerDependencies": {
+    "fermata": "git://github.com/natevw/fermata.git#upcoming"
+  }
+}
