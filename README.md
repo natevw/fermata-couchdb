@@ -1,5 +1,8 @@
 # fermata-couchdb
 
+**NOTE**: the currently-published fermata@0.10.6 already bundles this plugin, this is split out for an upcoming version!
+
+
 This is a CouchDB plugin for [Fermata](https://github.com/natevw/fermata). It primarily offers a `watchChanges` helper for monitoring a _changes feed, as well as a few other convenience helpers where it makes sense.
 
 
