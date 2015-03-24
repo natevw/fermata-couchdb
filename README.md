@@ -63,6 +63,9 @@ To facilitate this, this plugin offers a variant which, in the browser, is regis
     var fermata = require('fermata'),
         plugin = require('fermata-couchdb');
     fermata.registerPlugin('bigcouch', plugin.bigcouch);
+    
+    var db = fermata.bigcouch()('my-database');
+    // …
 
 This alternate plugin is used exactly as the main plugin. The only difference is that a response with a 202 status code will cause an error callback rather than a successful callback.
 
