@@ -1,6 +1,6 @@
 {
   "name": "fermata-couchdb",
-  "version": "0.10.7",
+  "version": "0.10.8",
   "description": "CouchDB helpers for Fermata",
   "main": "fermata-couchdb.js",
   "scripts": {
