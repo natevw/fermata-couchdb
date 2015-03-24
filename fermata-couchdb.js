@@ -13,9 +13,14 @@ Example use:
 
 var fermata;
 (function () {
+    
+    function autoBase(url) {
+      // TODO: better URL guessing (especially if window.location is available)
+      return url || "http://localhost:5984";
+    }
+    
     var plugin = function (transport, url) {
-        // TODO: better URL guessing (especially if window.location is available)
-        this.base = url || "http://localhost:5984";
+        this.base = autoBase(url);
         return transport.using('statusCheck').using('autoConvert', "application/json");
     };
     
@@ -129,9 +134,32 @@ var fermata;
         return utils;
     };
     
+    // WORKAROUND: custom statusCheck to treat 202 responses as an error
+    // if Cloudant sends this, we can't be sure the write won't conflict
+    // see https://github.com/cloudant/bigcouch/issues/55#issuecomment-30186518
+    // and https://cloudant.com/for-developers/faq/data/
+    // and http://bigcouch.cloudant.com/api
+    // it's futile to attempt a unanimous quorum read to be sure (r=N is only advisory!!)
+    // so…assume the worst (e.g. conflicting or lost update) and treat these like a 500
+    plugin.bigcouch = function (transport, url) {
+        this.base = autoBase(url);
+        transport = transport.using('statusCheck').using('autoConvert', "application/json");
+        return function (req, cb) {
+            return transport(req, function (e, d, m) {
+                var status = m && m['X-Status-Code'];
+                if (!e && status === 202) {
+                    e = Error("Troublesome status code from server: " + status);
+                    e.status = status;
+                }
+                cb(e, d, m);
+            });
+        };
+    };
+    
     // some boilerplate to deal with browser vs. CommonJS
     if (fermata) {
         fermata.registerPlugin("couchdb", plugin);
+        fermata.registerPlugin("bigcouch", plugin.bigcouch);
     } else {
         module.exports = plugin;
     }

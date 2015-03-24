@@ -53,6 +53,20 @@ The following documentation assumes this plugin has been registered with the nam
 - `fermata.couchdb([serverUrl])` — Returns a "URL proxy" object for the server's base URL. This gives you access to CouchDB's complete API via [Fermata's usual API](https://github.com/natevw/fermata#complete-documentation), following [its philosophy](https://github.com/natevw/fermata#why) of direct REST access. Pass a string with the `serverUrl` or omit to autodect. (**TBD**: The "autodection" currently just uses `"http://localhost:5984"` if no `serverUrl` is provided, but this could get a bit smarter in the future.)
 - `fermata.plugins.couchdb.watchChanges(databaseUrl, lastSeq, callback[, interval])` — Starts monitoring changes, returning a watcher object whose API is documented below. `databaseUrl` must be a Fermata URL object, using pre-set query parameters to customize many of the monitoring options, e.g. `db({include_docs:true, timeout:5e3})`. Changes will be monitored starting from `lastSeq`, which may be `'now'` if you aren't trying to catch up a set of existing data [**TBD**: why isn't this included in databaseUrl?]. Your `callback` will be provided with an /array/ of changes (to support bulk handling) as its first and only argument. (Currently all error handling is done internally, which may not be ideal….) Finally, the `interval` parameter controls how changes are monitored. If omitted, it will long-poll using any `timeout` query parameter of `databaseURL`. If set to a number, the watcher will issue simple polls with `interval` milliseconds between the previous response and the next request. Under node.js you can also pass `'continuous'` to keep a persistent/streaming connection open.
 
+
+## Alternate Cloudant / BigCouch (/ CouchDB 2.0?) extended plugin
+
+Cloudant's "BigCouch" version of CouchDB [does not actually enforce read quorums](https://github.com/cloudant/bigcouch/issues/55#issuecomment-30186518)! This means that if a quorum *write* request yields a 202 response, there is no way to ever know whether the write ended up conflicting or not. So my recommendation is to treat such writes as failed from the upstream code's perspective.
+
+To facilitate this, this plugin offers a variant which, in the browser, is registered under the "bigcouch" name. To register under node.js you can follow this example, changing the variable names and/or registered name if you'd like:
+
+    var fermata = require('fermata'),
+        plugin = require('fermata-couchdb');
+    fermata.registerPlugin('bigcouch', plugin.bigcouch);
+
+This alternate plugin is used exactly as the main plugin. The only difference is that a response with a 202 status code will cause an error callback rather than a successful callback.
+
+
 ## Changes watcher API
 
 - `watcher.cancel()` — Stops (or pauses) monitoring changes. Any pending request will be aborted and no more callbacks will be sent; however, if you keep a reference to the watcher, its current status is preserved.
