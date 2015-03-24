@@ -1,4 +1,4 @@
-/* CouchDB (and friends) plugin for Fermata, with preliminary support for change events and default base URL.
+/* CouchDB (and friends) plugin for Fermata, with support for change events and default base URL.
 
 Example use:
     <script src="fermata.js"></script>
@@ -60,11 +60,15 @@ var fermata;
             feedType = interval;
             interval = 0;
         }
-        function safeCallback(results) {
+        function warn() {
+            if (console && console.warn) console.warn.apply(console, arguments);
+        }
+        
+        function safeCallback() {
             try {
-                callback(results);
+                return callback.apply(this, arguments);
             } catch (e) {
-                if (console && console.warn) console.warn("CouchDB _changes callback handler threw exception", e);
+                warn("CouchDB _changes callback handler threw exception", e);
             }
         }
         function poll() {
@@ -80,7 +84,9 @@ var fermata;
                 activeRequest = (responseType === 'stream') ? activeRequest : null;
                 if (cancelled) return;
                 else if (e) {
-                    if (console && console.warn) console.warn("Couldn't fetch CouchDB _changes feed, trying again in ", backoff, " milliseconds.", e, (responseType === 'stream') ? '<stream>' : d);
+                    var _d = (responseType === 'stream') ? '<stream>' : d;
+                    warn("Couldn't fetch CouchDB _changes feed, trying again in "+backoff+" milliseconds.", e, _d);
+                    safeCallback([], e);
                     setTimeout(poll, backoff);
                     if (!interval) backoff *= 2;
                 } else {
@@ -98,7 +104,7 @@ var fermata;
                                 safeCallback([result]);
                                 currentSeq = result.seq;
                             } catch (e) {
-                                if (console && console.warn) console.warn("CouchDB _changes watcher failed to parse part of response", e);
+                                warn("CouchDB _changes watcher failed to parse part of response", e);
                             }
                             prev = lines[last];
                         });

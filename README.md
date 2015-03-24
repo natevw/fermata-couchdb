@@ -50,8 +50,24 @@ Under node.js/browserify you will again need to `npm install fermata fermata-cou
 
 The following documentation assumes this plugin has been registered with the name `'couchdb'` (as by default the browser, or if you follow the node.js example above).
 
-- `fermata.couchdb([serverUrl])` — Returns a "URL proxy" object for the server's base URL. This gives you access to CouchDB's complete API via [Fermata's usual API](https://github.com/natevw/fermata#complete-documentation), following [its philosophy](https://github.com/natevw/fermata#why) of direct REST access. Pass a string with the `serverUrl` or omit to autodect. (**TBD**: The "autodection" currently just uses `"http://localhost:5984"` if no `serverUrl` is provided, but this could get a bit smarter in the future.)
-- `fermata.plugins.couchdb.watchChanges(databaseUrl, lastSeq, callback[, interval])` — Starts monitoring changes, returning a watcher object whose API is documented below. `databaseUrl` must be a Fermata URL object, using pre-set query parameters to customize many of the monitoring options, e.g. `db({include_docs:true, timeout:5e3})`. Changes will be monitored starting from `lastSeq`, which may be `'now'` if you aren't trying to catch up a set of existing data [**TBD**: why isn't this included in databaseUrl?]. Your `callback` will be provided with an /array/ of changes (to support bulk handling) as its first and only argument. (Currently all error handling is done internally, which may not be ideal….) Finally, the `interval` parameter controls how changes are monitored. If omitted, it will long-poll using any `timeout` query parameter of `databaseURL`. If set to a number, the watcher will issue simple polls with `interval` milliseconds between the previous response and the next request. Under node.js you can also pass `'continuous'` to keep a persistent/streaming connection open.
+- `fermata.couchdb([serverUrl])` — Returns a "URL proxy" object for the server's base URL. This gives you access to CouchDB's complete API via [Fermata's usual API](https://github.com/natevw/fermata#complete-documentation), following [its philosophy](https://github.com/natevw/fermata#why) of direct REST access. Pass a string with the `serverUrl` or omit to autodect. (**TBD**: The "autodection" currently just uses `"http://localhost:5984"` if no `serverUrl` is provided, but this could get a bit smarter in the future, [issue #1](https://github.com/natevw/fermata-couchdb/issues/1))
+- `fermata.plugins.couchdb.watchChanges(databaseUrl, lastSeq, callback[, interval])` — Starts monitoring changes, returning a watcher object whose API is documented below, along with this method's parameters. This helper encapsulates best-practice polling behaviors depending on the monitoring mode (determined via `interval`). For the continuous and long-polling cases (see below), this includes exponential backoff on error.
+
+
+## Changes watcher API
+
+Parameters to the `.watchChanges(databaseUrl, lastSeq, callback[, interval])` method introduced above are as follows:
+
+- required parameter: `databaseUrl` — must be a Fermata URL object, using pre-set query parameters to customize many of the monitoring options, e.g. `db({include_docs:true, timeout:5e3})`.
+- required parameter: `lastSeq` — Changes will be monitored starting from (and not including) this sequence, which may be `'now'` if you aren't trying to catch up a set of existing data [**TBD**: why isn't this handled via databaseUrl? [issue #3](https://github.com/natevw/fermata-couchdb/issues/3)].
+- required parameter: `callback` — whenever a set of changes is available, this function will be called with an /array/ of changes as its first argument. In the event of an error, it will be called with an empty array and an error object (from Fermata) as the *second* argument. This differs from normal node.js callback practice, so think of this more like an event listener if you prefer. Having the parameters in this order encourages you to ignore errors, as the watcher's built-in handling should be sufficient in many cases.
+- optional parameter: `interval` parameter controls how changes are monitored. If omitted, it will long-poll using any `timeout` query parameter of `databaseURL`. If set to a number, the watcher will issue simple polls with `interval` milliseconds between the previous response and the next request. Under node.js you can also pass `'continuous'` to keep a persistent/streaming connection open.
+
+The `.watchChanges(…)` method will return an watcher object with the following methods:
+
+- `watcher.cancel()` — Stops (or pauses) monitoring changes. Any pending request will be aborted and no more callbacks will be sent; however, if you keep a reference to the watcher, its current status is preserved.
+- `watcher.restart()` — Resumes monitoring of changes. Use this to "unpause" a cancelled watcher.
+- `watcher.getStatus()` — Returns an object with information about the monitoring status. Currently the only proprerty provided is `update_seq`, which is the last processed sequence.
 
 
 ## Alternate Cloudant / BigCouch (/ CouchDB 2.0?) extended plugin
@@ -68,15 +84,6 @@ To facilitate this, this plugin offers a variant which, in the browser, is regis
     // …
 
 This alternate plugin is used exactly as the main plugin. The only difference is that a response with a 202 status code will cause an error callback rather than a successful callback.
-
-
-## Changes watcher API
-
-- `watcher.cancel()` — Stops (or pauses) monitoring changes. Any pending request will be aborted and no more callbacks will be sent; however, if you keep a reference to the watcher, its current status is preserved.
-- `watcher.restart()` — Resumes monitoring of changes. Use this to "unpause" a cancelled watcher.
-- `watcher.getStatus()` — Returns an object with information about the monitoring status. Currently the only proprerty provided is `update_seq`, which is the last processed sequence.
-
-**TBD**: a way to be aware of (/customize?) errors
 
 
 ## License (MIT)
