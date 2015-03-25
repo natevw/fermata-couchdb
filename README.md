@@ -66,6 +66,7 @@ Parameters to the `.watchChanges(databaseUrl, lastSeq, callback[, interval])` me
 The `.watchChanges(…)` method will return an watcher object with the following methods:
 
 - `watcher.cancel()` — Stops (or pauses) monitoring changes. Any pending request will be aborted and no more callbacks will be sent; however, if you keep a reference to the watcher, its current status is preserved.
+- `watcher.pause()` — Alias for `.cancel()`.
 - `watcher.restart()` — Resumes monitoring of changes. Use this to "unpause" a cancelled watcher.
 - `watcher.getStatus()` — Returns an object with information about the monitoring status. Currently the only proprerty provided is `update_seq`, which is the last processed sequence.
 
