@@ -49,6 +49,10 @@ var fermata;
         avoidSpinners = _callDelayed;
     });
     
+    plugin.warn = function () {
+        if (console && console.warn) console.warn.apply(console, arguments);
+    };
+    
     plugin.watchChanges = function (db, lastSeq, callback, interval) {
         var currentSeq = lastSeq,
             DEFAULT_DELAY = (typeof interval === 'number') ? interval : 100,
@@ -60,15 +64,12 @@ var fermata;
             feedType = interval;
             interval = 0;
         }
-        function warn() {
-            if (console && console.warn) console.warn.apply(console, arguments);
-        }
         
         function safeCallback() {
             try {
                 return callback.apply(this, arguments);
             } catch (e) {
-                warn("CouchDB _changes callback handler threw exception", e);
+                plugin.warn("CouchDB _changes callback handler threw exception", e);
             }
         }
         function poll() {
@@ -85,7 +86,7 @@ var fermata;
                 if (cancelled) return;
                 else if (e) {
                     var _d = (responseType === 'stream') ? '<stream>' : d;
-                    warn("Couldn't fetch CouchDB _changes feed, trying again in "+backoff+" milliseconds.", e, _d);
+                    plugin.warn("Couldn't fetch CouchDB _changes feed, trying again in "+backoff+" milliseconds.", e, _d);
                     safeCallback([], e);
                     setTimeout(poll, backoff);
                     if (!interval) backoff *= 2;
@@ -104,7 +105,7 @@ var fermata;
                                 safeCallback([result]);
                                 currentSeq = result.seq;
                             } catch (e) {
-                                warn("CouchDB _changes watcher failed to parse part of response", e);
+                                plugin.warn("CouchDB _changes watcher failed to parse part of response", e);
                             }
                             prev = lines[last];
                         });
