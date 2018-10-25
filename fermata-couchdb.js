@@ -77,22 +77,22 @@ var fermata;
                as described in e.g. http://www.dashbay.com/2011/05/internet-explorer-caches-ajax/ */
             // NOTE: see also https://issues.apache.org/jira/browse/COUCHDB-257 (shouldn't have been closed?!)
             db = db({nocache:Math.random()});
-            var responseType = (feedType === 'continuous') ? 'stream' : null,
+            var options = (feedType === 'continuous') ? {responseType:'stream'} : {},
                 // NOTE: CouchDB doesn't really handle this Content-Type, but it does avoid https://issues.apache.org/jira/browse/COUCHDB-2562 in our case
                 headers = (feedType === 'continuous') ? {'Accept': "application/x-ldjson"} : null,
                 query = (currentSeq === 'now') ? {feed:feedType, since:'now'} : {feed:feedType, $since:currentSeq};
-            activeRequest = db('_changes', query).get(responseType, headers, null, function (e,d) {
-                activeRequest = (responseType === 'stream') ? activeRequest : null;
+            activeRequest = db('_changes', query).get(options, headers, null, function (e,d) {
+                activeRequest = (options.responseType === 'stream') ? activeRequest : null;
                 if (cancelled) return;
                 else if (e) {
-                    var _d = (responseType === 'stream') ? '<stream>' : d;
+                    var _d = (options.responseType === 'stream') ? '<stream>' : d;
                     plugin.warn("Couldn't fetch CouchDB _changes feed, trying again in "+backoff+" milliseconds.", e, _d);
                     safeCallback([], e);
                     setTimeout(poll, backoff);
                     if (!interval) backoff *= 2;
                 } else {
                     backoff = DEFAULT_DELAY;
-                    if (responseType === 'stream') {
+                    if (options.responseType === 'stream') {
                         var prev = "";
                         d.setEncoding('utf8');
                         d.on('data', function (chunk) {
