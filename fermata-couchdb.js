@@ -58,6 +58,7 @@ var fermata;
             DEFAULT_DELAY = (typeof interval === 'number') ? interval : 100,
             backoff = DEFAULT_DELAY,
             feedType = (interval) ? 'normal' : 'longpoll',
+            hadPriorError = false,
             activeRequest = null,
             cancelled = false;
         if (interval === 'continuous') {
@@ -88,10 +89,15 @@ var fermata;
                     var _d = (options.responseType === 'stream') ? '<stream>' : d;
                     plugin.warn("Couldn't fetch CouchDB _changes feed, trying again in "+backoff+" milliseconds.", e, _d);
                     safeCallback([], e);
+                    hadPriorError = true;
                     setTimeout(poll, backoff);
                     if (!interval) backoff *= 2;
                 } else {
-                    backoff = DEFAULT_DELAY;
+                    if (hadPriorError) {
+                        safeCallback([], null);         // signal all clear (even if no changes yet)
+                        backoff = DEFAULT_DELAY;
+                        hadPriorError = false;
+                    }
                     if (options.responseType === 'stream') {
                         var prev = "";
                         d.setEncoding('utf8');
